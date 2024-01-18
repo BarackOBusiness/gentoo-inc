@@ -200,7 +200,8 @@ pkg_pretend() {
 		   ! use video_cards_freedreno &&
 		   ! use video_cards_intel &&
 		   ! use video_cards_radeonsi &&
-		   ! use video_cards_v3d; then
+		   ! use video_cards_v3d; &&
+			 ! use video_cards_nouveau; then
 			ewarn "Ignoring USE=vulkan     since VIDEO_CARDS does not contain d3d12, freedreno, intel, radeonsi, or v3d"
 		fi
 	fi
