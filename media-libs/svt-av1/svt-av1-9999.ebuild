@@ -11,6 +11,7 @@ HOMEPAGE="https://gitlab.com/AOMediaCodec/SVT-AV1"
 if [[ ${PV} = 9999 ]]; then
 	inherit git-r3
 	EGIT_REPO_URI="https://github.com/gianni-rosato/svt-av1-psy.git"
+	EGIT_BRANCH="lavish"
 else
 	SRC_URI="https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v${PV}/SVT-AV1-v${PV}.tar.bz2"
 	KEYWORDS="~alpha amd64 arm arm64 ~hppa ~ia64 ~loong ~mips ppc ppc64 ~riscv sparc x86"
