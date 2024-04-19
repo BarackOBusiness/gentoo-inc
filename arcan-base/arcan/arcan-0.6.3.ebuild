@@ -2,7 +2,6 @@
 # Distributed under the terms of the GNU General Public License v2
 EAPI=8
 
-
 inherit cmake
 
 DESCRIPTION="A powerful and versatile multimedia development framework"
