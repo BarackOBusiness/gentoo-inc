@@ -13,7 +13,7 @@ if [[ ${PV} = 9999 ]]; then
 	EGIT_REPO_URI="https://github.com/gianni-rosato/svt-av1-psy.git"
 else
 	SRC_URI="https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v${PV}/SVT-AV1-v${PV}.tar.bz2"
-	KEYWORDS="~alpha amd64 arm arm64 ~hppa ~ia64 ~loong ~mips ppc ppc64 ~riscv sparc x86"
+	KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86"
 	S="${WORKDIR}/SVT-AV1-v${PV}"
 fi
 
@@ -33,7 +33,7 @@ multilib_src_configure() {
 		# .. and https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/master/.gitlab/workflows/linux/.gitlab-ci.yml implies it's all quite manual?
 		-DBUILD_TESTING=OFF
 		-DCMAKE_OUTPUT_DIRECTORY="${BUILD_DIR}"
-		-DENABLE_AVX512=ON
+		-DENABLE_AVX512=OFF # WHY CAN'T I USE MY FUCKING CPU INSTRUCTIONS
 	)
 
 	[[ ${ABI} != amd64 ]] && mycmakeargs+=( -DCOMPILE_C_ONLY=ON )
