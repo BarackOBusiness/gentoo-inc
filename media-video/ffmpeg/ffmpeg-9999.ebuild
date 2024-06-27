@@ -103,7 +103,7 @@ FFMPEG_FLAG_MAP=(
 FFMPEG_ENCODER_FLAG_MAP=(
 	amf amrenc:libvo-amrwbenc kvazaar:libkvazaar libaom	mp3:libmp3lame
 	openh264:libopenh264 rav1e:librav1e snappy:libsnappy svt-av1:libsvtav1
-	theora:libtheora twolame:libtwolame webp:libwebp x264:libx264
+	theora:libtheora twolame:libtwolame vvenc:libvvenc webp:libwebp x264:libx264
 	x265:libx265 xvid:libxvid
 )
 
@@ -187,7 +187,7 @@ IUSE="${IUSE} ${FFTOOLS[@]/#/+fftools_}"
 
 RDEPEND="
 	alsa? ( >=media-libs/alsa-lib-1.0.27.2[${MULTILIB_USEDEP}] )
-	amf? ( media-video/amdgpu-pro-amf:= )
+	amf? ( media-video/amdgpu-pro-amdenc:= )
 	amr? ( >=media-libs/opencore-amr-0.1.3-r1[${MULTILIB_USEDEP}] )
 	bluray? ( >=media-libs/libbluray-0.3.0-r1:=[${MULTILIB_USEDEP}] )
 	bs2b? ( >=media-libs/libbs2b-3.1.0-r1[${MULTILIB_USEDEP}] )
@@ -208,6 +208,7 @@ RDEPEND="
 			>=media-libs/libtheora-1.1.1[encode,${MULTILIB_USEDEP}]
 		)
 		twolame? ( >=media-sound/twolame-0.3.13-r1[${MULTILIB_USEDEP}] )
+		vvenc? ( >=media-libs/libvvenc-1.11.1 )
 		webp? ( >=media-libs/libwebp-0.3.0:=[${MULTILIB_USEDEP}] )
 		x264? ( >=media-libs/x264-0.0.20130506:=[${MULTILIB_USEDEP}] )
 		x265? ( >=media-libs/x265-1.6:=[${MULTILIB_USEDEP}] )

@@ -1,0 +1,3 @@
+# Little is standardized, the command line tools barely function, and it's obviously not supported in ffmpeg yet, you don't want to install this.
+# When it is finished more ebuild work will come to polish up what remains of it.
+=media-libs/avtransport-9999
