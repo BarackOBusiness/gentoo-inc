@@ -25,6 +25,8 @@ BDEPEND="virtual/pkgconfig"
 
 S="${WORKDIR}/librist-v${PV}"
 
+PATCHES="${FILESDIR}/mbedtls-dep.patch"
+
 src_configure() {
 	local emesonargs=(
 		-Dstatic_analyze=false
