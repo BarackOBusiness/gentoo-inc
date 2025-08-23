@@ -21,6 +21,7 @@ fi
 LICENSE="BSD-2 Apache-2.0 BSD ISC LGPL-2.1+ MIT"
 SLOT="0"
 
+RDEPEND="amd64? ( dev-libs/cpuinfo )"
 BDEPEND="amd64? ( dev-lang/yasm )"
 
 multilib_src_configure() {
@@ -33,7 +34,7 @@ multilib_src_configure() {
 		# .. and https://gitlab.com/AOMediaCodec/SVT-AV1/-/blob/master/.gitlab/workflows/linux/.gitlab-ci.yml implies it's all quite manual?
 		-DBUILD_TESTING=OFF
 		-DCMAKE_OUTPUT_DIRECTORY="${BUILD_DIR}"
-		-DUSE_CPUINFO=OFF
+		-DUSE_CPUINFO=SYSTEM
 		-DENABLE_AVX512=ON # pretty sure this doesn't crash anymore, more testing may be needed
 	)
 

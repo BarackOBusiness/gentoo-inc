@@ -34,7 +34,7 @@ BDEPEND="
 	test? ( dev-util/cmocka )
 "
 
-PATCHES="${FILESDIR}/mbedtls-dep.patch"
+PATCHES="${FILESDIR}/32c46317ebb03f318358ffc0af56fed26e84dc84.diff"
 
 src_configure() {
 	local emesonargs=(
