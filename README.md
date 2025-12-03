@@ -5,4 +5,3 @@ This overlay depends on the GURU overlay for some packages, unless I determine t
 
 ## TODO
 - [ ] Be better, get gooder, increase ebuild skill
-- [ ] Add cosmic desktop environment base ebuilds
