@@ -1,0 +1,2 @@
+# SDL3 support blocked by packaging for sdl3_gfx
+games-roguelike/hyperrogue sdl3
