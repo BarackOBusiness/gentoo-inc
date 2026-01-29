@@ -1,11 +1,11 @@
-# Copyright 2025 Gentoo Authors
+# Copyright 2025-2026 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
 inherit flag-o-matic multilib-minimal toolchain-funcs
 
-FFMPEG_SOC_PATCH=
+FFMPEG_SOC_PATCH=ffmpeg-rpi-8.0.patch
 FFMPEG_SUBSLOT=60.62.62 # avutil.avcodec.avformat SONAME
 
 if [[ ${PV} == 9999 ]]; then
@@ -24,7 +24,7 @@ else
 		"}
 	"
 	S=${WORKDIR}/ffmpeg-${PV} # avoid ${P} for ffmpeg-compat
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86 ~amd64-linux ~x86-linux ~arm64-macos ~x64-macos"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86 ~arm64-macos ~x64-macos"
 fi
 
 DESCRIPTION="Complete solution to record/convert/stream audio and video"
@@ -44,6 +44,7 @@ FFMPEG_IUSE_MAP=(
 	amrenc:libvo-amrwbenc@v3
 	amr:libopencore-amrnb,libopencore-amrwb@v3
 	appkit
+	apv:liboapv
 	bluray:libbluray
 	bs2b:libbs2b
 	bzip2:bzlib
@@ -84,11 +85,11 @@ FFMPEG_IUSE_MAP=(
 	libplacebo
 	librtmp:librtmp
 	libsoxr
-	libtesseract
 	lv2
 	lzma
 	modplug:libmodplug
 	nvenc:cuvid,ffnvcodec,nvdec,nvenc
+	ocr:libtesseract
 	openal
 	opencl
 	opengl
@@ -184,6 +185,7 @@ COMMON_DEPEND="
 	alsa? ( media-libs/alsa-lib[${MULTILIB_USEDEP}] )
 	amr? ( media-libs/opencore-amr[${MULTILIB_USEDEP}] )
 	amrenc? ( media-libs/vo-amrwbenc[${MULTILIB_USEDEP}] )
+	apv? ( media-libs/openapv[${MULTILIB_USEDEP}] )
 	bluray? ( media-libs/libbluray:=[${MULTILIB_USEDEP}] )
 	bs2b? ( media-libs/libbs2b[${MULTILIB_USEDEP}] )
 	bzip2? ( app-arch/bzip2[${MULTILIB_USEDEP}] )
@@ -232,13 +234,13 @@ COMMON_DEPEND="
 	libplacebo? ( media-libs/libplacebo:=[vulkan,${MULTILIB_USEDEP}] )
 	librtmp? ( media-video/rtmpdump[${MULTILIB_USEDEP}] )
 	libsoxr? ( media-libs/soxr[${MULTILIB_USEDEP}] )
-	libtesseract? ( app-text/tesseract:=[${MULTILIB_USEDEP}] )
 	lv2? (
 		media-libs/lilv[${MULTILIB_USEDEP}]
 		media-libs/lv2[${MULTILIB_USEDEP}]
 	)
 	lzma? ( app-arch/xz-utils[${MULTILIB_USEDEP}] )
 	modplug? ( media-libs/libmodplug[${MULTILIB_USEDEP}] )
+	ocr? ( app-text/tesseract:=[${MULTILIB_USEDEP}] )
 	openal? ( media-libs/openal[${MULTILIB_USEDEP}] )
 	opencl? ( virtual/opencl[${MULTILIB_USEDEP}] )
 	opengl? ( media-libs/libglvnd[X,${MULTILIB_USEDEP}] )
@@ -337,6 +339,7 @@ MULTILIB_WRAPPED_HEADERS=(
 
 PATCHES=(
 	"${FILESDIR}"/ffmpeg-6.1-opencl-parallel-gmake-fix.patch
+	"${FILESDIR}"/ffmpeg-8.0.1-svt-av1-4.patch
 )
 
 pkg_pretend() {
@@ -448,7 +451,6 @@ multilib_src_configure() {
 		--disable-libklvanc
 		--disable-liblcevc-dec
 		--disable-libmysofa
-		--disable-liboapv
 		--disable-libopenvino
 		--disable-libshine
 		--disable-libtls
