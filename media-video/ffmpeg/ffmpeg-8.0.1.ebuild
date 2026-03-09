@@ -24,7 +24,7 @@ else
 		"}
 	"
 	S=${WORKDIR}/ffmpeg-${PV} # avoid ${P} for ffmpeg-compat
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86 ~arm64-macos ~x64-macos"
+	KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~sparc x86 ~arm64-macos ~x64-macos"
 fi
 
 DESCRIPTION="Complete solution to record/convert/stream audio and video"
@@ -44,7 +44,7 @@ FFMPEG_IUSE_MAP=(
 	amrenc:libvo-amrwbenc@v3
 	amr:libopencore-amrnb,libopencore-amrwb@v3
 	appkit
-	apv:liboapv
+	apv:^liboapv # no multilib
 	bluray:libbluray
 	bs2b:libbs2b
 	bzip2:bzlib
@@ -103,7 +103,7 @@ FFMPEG_IUSE_MAP=(
 	quirc:libquirc
 	rabbitmq:^librabbitmq # no multilib
 	rav1e:^librav1e # no multilib
-	rist:librist
+	rist:^librist # no multilib
 	rubberband:librubberband
 	samba:libsmbclient@v3 # GPL-3+ only
 	sdl:sdl2
@@ -185,7 +185,7 @@ COMMON_DEPEND="
 	alsa? ( media-libs/alsa-lib[${MULTILIB_USEDEP}] )
 	amr? ( media-libs/opencore-amr[${MULTILIB_USEDEP}] )
 	amrenc? ( media-libs/vo-amrwbenc[${MULTILIB_USEDEP}] )
-	apv? ( media-libs/openapv[${MULTILIB_USEDEP}] )
+	apv? ( media-libs/openapv )
 	bluray? ( media-libs/libbluray:=[${MULTILIB_USEDEP}] )
 	bs2b? ( media-libs/libbs2b[${MULTILIB_USEDEP}] )
 	bzip2? ( app-arch/bzip2[${MULTILIB_USEDEP}] )
@@ -254,7 +254,7 @@ COMMON_DEPEND="
 	quirc? ( media-libs/quirc:=[${MULTILIB_USEDEP}] )
 	rabbitmq? ( net-libs/rabbitmq-c:= )
 	rav1e? ( >=media-video/rav1e-0.5:=[capi] )
-	rist? ( net-libs/librist:=[${MULTILIB_USEDEP}] )
+	rist? ( net-libs/librist )
 	rubberband? ( media-libs/rubberband:=[${MULTILIB_USEDEP}] )
 	samba? ( net-fs/samba:=[client,${MULTILIB_USEDEP}] )
 	sdl? (
@@ -516,6 +516,10 @@ multilib_src_configure() {
 			*mingw32*) conf+=( --target-os=mingw32 );;
 			*linux*) conf+=( --target-os=linux );;
 		esac
+	elif use arm; then
+		# TODO?: could *always* pass tc-arch-kernel, albeit that function
+		# is meant for the kernel and just mostly matches by accident
+		conf+=( --arch=arm ) #969514
 	fi
 
 	# skipping tests is handled at configure-time
