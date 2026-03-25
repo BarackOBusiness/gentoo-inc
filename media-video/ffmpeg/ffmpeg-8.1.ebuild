@@ -5,7 +5,7 @@ EAPI=8
 
 inherit flag-o-matic multilib-minimal toolchain-funcs
 
-FFMPEG_SOC_PATCH=ffmpeg-rpi-8.0.patch
+FFMPEG_SOC_PATCH=
 FFMPEG_SUBSLOT=60.62.62 # avutil.avcodec.avformat SONAME
 
 if [[ ${PV} == 9999 ]]; then
@@ -24,7 +24,7 @@ else
 		"}
 	"
 	S=${WORKDIR}/ffmpeg-${PV} # avoid ${P} for ffmpeg-compat
-	KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~sparc x86 ~arm64-macos ~x64-macos"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86 ~arm64-macos ~x64-macos"
 fi
 
 DESCRIPTION="Complete solution to record/convert/stream audio and video"
@@ -48,6 +48,7 @@ FFMPEG_IUSE_MAP=(
 	bluray:libbluray
 	bs2b:libbs2b
 	bzip2:bzlib
+	cairo
 	cdio:libcdio
 	chromaprint
 	codec2:libcodec2
@@ -89,6 +90,7 @@ FFMPEG_IUSE_MAP=(
 	lzma
 	modplug:libmodplug
 	nvenc:cuvid,ffnvcodec,nvdec,nvenc
+	opencolorio:^libopencolorio # no multilib
 	ocr:libtesseract
 	openal
 	opencl
@@ -107,7 +109,6 @@ FFMPEG_IUSE_MAP=(
 	rubberband:librubberband
 	samba:libsmbclient@v3 # GPL-3+ only
 	sdl:sdl2
-	shaderc:libshaderc
 	snappy:libsnappy
 	sndio
 	speex:libspeex
@@ -125,7 +126,10 @@ FFMPEG_IUSE_MAP=(
 	vmaf:libvmaf
 	vorbis:libvorbis
 	vpx:libvpx
-	vulkan:vulkan,vulkan-static # still uses shared, only means no dlopen()
+	# libshaderc: merged here given shaderc is needed at build-time
+	# either way and many vulkan features depend on spirv_library
+	# vulkan-static: it still uses shared, only means no dlopen()
+	vulkan:libshaderc,vulkan,vulkan-static
 	webp:libwebp
 	x264:libx264
 	x265:libx265
@@ -164,7 +168,6 @@ REQUIRED_USE="
 	fribidi? ( truetype )
 	gmp? ( !librtmp )
 	libplacebo? ( vulkan )
-	shaderc? ( vulkan )
 	libaribb24? ( gpl ) cdio? ( gpl ) dvd? ( gpl ) frei0r? ( gpl )
 	rubberband? ( gpl ) samba? ( gpl ) vidstab? ( gpl ) x264? ( gpl )
 	x265? ( gpl ) xvid? ( gpl )
@@ -189,6 +192,7 @@ COMMON_DEPEND="
 	bluray? ( media-libs/libbluray:=[${MULTILIB_USEDEP}] )
 	bs2b? ( media-libs/libbs2b[${MULTILIB_USEDEP}] )
 	bzip2? ( app-arch/bzip2[${MULTILIB_USEDEP}] )
+	cairo? ( x11-libs/cairo[${MULTILIB_USEDEP}] )
 	cdio? ( dev-libs/libcdio-paranoia:=[${MULTILIB_USEDEP}] )
 	chromaprint? ( media-libs/chromaprint:=[${MULTILIB_USEDEP}] )
 	codec2? ( media-libs/codec2:=[${MULTILIB_USEDEP}] )
@@ -240,6 +244,7 @@ COMMON_DEPEND="
 	)
 	lzma? ( app-arch/xz-utils[${MULTILIB_USEDEP}] )
 	modplug? ( media-libs/libmodplug[${MULTILIB_USEDEP}] )
+	opencolorio? ( media-libs/opencolorio:= )
 	ocr? ( app-text/tesseract:=[${MULTILIB_USEDEP}] )
 	openal? ( media-libs/openal[${MULTILIB_USEDEP}] )
 	opencl? ( virtual/opencl[${MULTILIB_USEDEP}] )
@@ -261,7 +266,6 @@ COMMON_DEPEND="
 		media-libs/libsdl2[sound(+),video(+),${MULTILIB_USEDEP}]
 		libplacebo? ( media-libs/libsdl2[vulkan] )
 	)
-	shaderc? ( media-libs/shaderc[${MULTILIB_USEDEP}] )
 	snappy? ( app-arch/snappy:=[${MULTILIB_USEDEP}] )
 	sndio? ( media-sound/sndio:=[${MULTILIB_USEDEP}] )
 	speex? ( media-libs/speex[${MULTILIB_USEDEP}] )
@@ -289,7 +293,10 @@ COMMON_DEPEND="
 	vmaf? ( media-libs/libvmaf:=[${MULTILIB_USEDEP}] )
 	vorbis? ( media-libs/libvorbis[${MULTILIB_USEDEP}] )
 	vpx? ( media-libs/libvpx:=[${MULTILIB_USEDEP}] )
-	vulkan? ( media-libs/vulkan-loader[${MULTILIB_USEDEP}] )
+	vulkan? (
+		media-libs/shaderc[${MULTILIB_USEDEP}]
+		media-libs/vulkan-loader[${MULTILIB_USEDEP}]
+	)
 	webp? ( media-libs/libwebp:=[${MULTILIB_USEDEP}] )
 	x264? ( media-libs/x264:=[${MULTILIB_USEDEP}] )
 	x265? ( media-libs/x265:=[${MULTILIB_USEDEP}] )
@@ -310,7 +317,7 @@ RDEPEND="
 DEPEND="
 	${COMMON_DEPEND}
 	X? ( x11-base/xorg-proto )
-	amf? ( >=media-libs/amf-headers-1.4.36-r1 )
+	amf? ( >=media-libs/amf-headers-1.5.0 )
 	kernel_linux? ( >=sys-kernel/linux-headers-6 )
 	ladspa? ( media-libs/ladspa-sdk )
 	nvenc? ( >=media-libs/nv-codec-headers-12.1.14.0 )
@@ -322,6 +329,7 @@ BDEPEND="
 	virtual/pkgconfig
 	amd64? ( dev-lang/nasm )
 	cuda? ( llvm-core/clang:*[llvm_targets_NVPTX] )
+	vulkan? ( media-libs/shaderc )
 	${FFMPEG_UNSLOTTED:+"
 		dev-lang/perl
 		doc? ( sys-apps/texinfo )
@@ -339,7 +347,6 @@ MULTILIB_WRAPPED_HEADERS=(
 
 PATCHES=(
 	"${FILESDIR}"/ffmpeg-6.1-opencl-parallel-gmake-fix.patch
-	"${FILESDIR}"/ffmpeg-8.0.1-svt-av1-4.patch
 )
 
 pkg_pretend() {
@@ -450,16 +457,20 @@ multilib_src_configure() {
 		--disable-libdavs2
 		--disable-libklvanc
 		--disable-liblcevc-dec
+		--disable-libmpeghdec
 		--disable-libmysofa
 		--disable-libopenvino
 		--disable-libshine
+		--disable-libsvtjpegxs
 		--disable-libtls
 		--disable-libuavs3d
 		--disable-libvvenc
 		--disable-libxavs
 		--disable-libxavs2
 		--disable-libxevd
+		--disable-libxevdb
 		--disable-libxeve
+		--disable-libxeveb
 		--disable-ohcodec
 		--disable-pocketsphinx
 		--disable-rkmpp
@@ -469,7 +480,7 @@ multilib_src_configure() {
 		# disabled for other or additional reasons
 		--disable-cuda-nvcc # prefer cuda-llvm for less issues
 		--disable-libcelt # obsolete (bug #664158)
-		--disable-libglslang # prefer USE=shaderc (bug #918989,#920283,#922333)
+		--disable-libglslang # prefer shaderc (bug #918989,#920283,#922333)
 		--disable-liblensfun # https://trac.ffmpeg.org/ticket/9112 (abandoned?)
 		--disable-libmfx # prefer libvpl for USE=qsv
 		--disable-libnpp # deprecated and not supported for cuda 13.0+
