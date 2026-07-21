@@ -3,9 +3,9 @@
 
 EAPI=8
 
-inherit flag-o-matic multilib-minimal toolchain-funcs
+inherit flag-o-matic multilib-minimal toolchain-funcs udev
 
-FFMPEG_SOC_PATCH=
+FFMPEG_SOC_PATCH=ffmpeg-soc-8.1.patch
 FFMPEG_SUBSLOT=60.62.62 # avutil.avcodec.avformat SONAME
 
 if [[ ${PV} == 9999 ]]; then
@@ -43,8 +43,8 @@ FFMPEG_IUSE_MAP=(
 	amf
 	amrenc:libvo-amrwbenc@v3
 	amr:libopencore-amrnb,libopencore-amrwb@v3
-	appkit
 	apv:^liboapv # no multilib
+	appkit
 	bluray:libbluray
 	bs2b:libbs2b
 	bzip2:bzlib
@@ -52,7 +52,7 @@ FFMPEG_IUSE_MAP=(
 	cdio:libcdio
 	chromaprint
 	codec2:libcodec2
-	cuda:cuda-llvm
+	cuda-clang:cuda-llvm
 	+dav1d:libdav1d
 	${FFMPEG_UNSLOTTED:+doc:^htmlpages}
 	+drm:libdrm
@@ -164,7 +164,7 @@ IUSE="
 	${FFMPEG_SOC_PATCH:+soc}
 "
 REQUIRED_USE="
-	cuda? ( nvenc )
+	cuda-clang? ( nvenc )
 	fribidi? ( truetype )
 	gmp? ( !librtmp )
 	libplacebo? ( vulkan )
@@ -328,7 +328,7 @@ BDEPEND="
 	app-alternatives/awk
 	virtual/pkgconfig
 	amd64? ( dev-lang/nasm )
-	cuda? ( llvm-core/clang:*[llvm_targets_NVPTX] )
+	cuda-clang? ( llvm-core/clang:*[llvm_targets_NVPTX] )
 	vulkan? ( media-libs/shaderc )
 	${FFMPEG_UNSLOTTED:+"
 		dev-lang/perl
@@ -404,6 +404,12 @@ src_prepare() {
 		tc-ld-is-mold && tc-is-clang && FFMPEG_ENABLE_LTO= #963835
 	fi
 	filter-lto
+
+	# workaround ICE with <gcc-16.1.1_p20260606:16 (bug #973641)
+	# TODO: kept to let people update, cleanup after a few months
+	tc-is-gcc && [[ $(gcc-major-version) -eq 16 ]] &&
+		has_version -b '<sys-devel/gcc-16.1.1_p20260606:16' &&
+		append-flags -fno-tree-vectorize
 }
 
 multilib_src_configure() {
@@ -501,7 +507,6 @@ multilib_src_configure() {
 
 	in_iuse soc && use soc &&
 		conf+=(
-			--disable-epoxy
 			--enable-libudev
 			--enable-sand
 			--enable-v4l2-request
@@ -535,6 +540,17 @@ multilib_src_configure() {
 
 	# skipping tests is handled at configure-time
 	local skip_tests=()
+
+	# tests known failing on BE arches, skip for now given potential
+	# fixes are complex and would rather wait for fixed release
+	# (shouldn't impact most BE users, scarcely used features)
+	# https://code.ffmpeg.org/FFmpeg/FFmpeg/issues/22564
+	# https://code.ffmpeg.org/FFmpeg/FFmpeg/pulls/22274
+	[[ $(tc-endian) == big ]] &&
+		skip_tests+=(
+			filter-drawvg-video
+			vsynth{1,2,3}-ffvhuff420p12
+		)
 
 	# zlib-ng is not bitexact w/ zlib producing mismatching md5sum (bug #965737)
 	has_version 'sys-libs/zlib-ng[compat]' &&
@@ -591,7 +607,10 @@ multilib_src_configure() {
 
 multilib_src_compile() {
 	mkdir -p fftools/resources/ || die #965687
+	mkdir -p libav{codec,filter}/vulkan/ || die #974907
+
 	emake V=1
+
 	in_iuse chromium && use chromium && multilib_is_native_abi &&
 		emake V=1 libffmpeg
 }
@@ -605,4 +624,17 @@ multilib_src_install() {
 	emake V=1 DESTDIR="${D}" install
 	in_iuse chromium && use chromium && multilib_is_native_abi &&
 		emake V=1 DESTDIR="${D}" install-libffmpeg
+}
+
+multilib_src_install_all() {
+	in_iuse soc && use soc && udev_dorules "${FILESDIR}"/60-dma-heap-ffmpeg.rules
+	einstalldocs
+}
+
+pkg_postinst() {
+	in_iuse soc && use soc && udev_reload
+}
+
+pkg_postrm() {
+	in_iuse soc && use soc && udev_reload
 }
