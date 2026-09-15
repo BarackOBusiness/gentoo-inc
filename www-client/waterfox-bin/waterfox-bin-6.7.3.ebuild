@@ -6,11 +6,10 @@ EAPI=8
 inherit desktop xdg-utils
 
 MY_PN="waterfox"
-MY_PV="$(ver_cut 1).$(ver_cut 2).$(ver_cut 3)-$(ver_cut 4).$(ver_cut 5)"
 
 DESCRIPTION="A privacy-focused, performance-oriented browser based on Firefox"
 HOMEPAGE="https://www.waterfox.com/"
-SRC_URI="https://cdn.waterfox.com/waterfox/releases/${MY_PV}/Linux_x86_64/waterfox-${MY_PV}.tar.bz2 -> ${P}.tar.bz2"
+SRC_URI="https://cdn.waterfox.com/${MY_PN}/releases/${PV}/Linux_x86_64/waterfox-${PV}.tar.bz2 -> ${P}.tar.bz2"
 S="${WORKDIR}/${MY_PN}"
 
 LICENSE="MPL-2.0"
