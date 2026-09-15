@@ -189,7 +189,7 @@ COMMON_DEPEND="
 	alsa? ( media-libs/alsa-lib[${MULTILIB_USEDEP}] )
 	amr? ( media-libs/opencore-amr[${MULTILIB_USEDEP}] )
 	amrenc? ( media-libs/vo-amrwbenc[${MULTILIB_USEDEP}] )
-	apv? ( media-libs/openapv )
+	apv? ( =media-libs/openapv-0.3.0.0 )
 	bluray? ( media-libs/libbluray:=[${MULTILIB_USEDEP}] )
 	bs2b? ( media-libs/libbs2b[${MULTILIB_USEDEP}] )
 	bzip2? ( app-arch/bzip2[${MULTILIB_USEDEP}] )
