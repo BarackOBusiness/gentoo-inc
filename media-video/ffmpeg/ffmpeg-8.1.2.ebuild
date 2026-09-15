@@ -22,9 +22,10 @@ else
 		${FFMPEG_SOC_PATCH:+"
 			soc? ( https://dev.gentoo.org/~chewi/distfiles/${FFMPEG_SOC_PATCH} )
 		"}
+		https://distfiles.gentoo.org/pub/dev/ionen@gentoo.org/ffmpeg-$(ver_cut 1-2)-patchset-1.tar.xz
 	"
 	S=${WORKDIR}/ffmpeg-${PV} # avoid ${P} for ffmpeg-compat
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86 ~arm64-macos ~x64-macos"
+	KEYWORDS="~alpha amd64 arm arm64 ~hppa ~loong ~mips ppc ppc64 ~riscv ~sparc x86 ~arm64-macos ~x64-macos"
 fi
 
 DESCRIPTION="Complete solution to record/convert/stream audio and video"
@@ -346,7 +347,7 @@ MULTILIB_WRAPPED_HEADERS=(
 )
 
 PATCHES=(
-	"${FILESDIR}"/ffmpeg-6.1-opencl-parallel-gmake-fix.patch
+	"${WORKDIR}"/patches
 )
 
 pkg_pretend() {
@@ -404,12 +405,6 @@ src_prepare() {
 		tc-ld-is-mold && tc-is-clang && FFMPEG_ENABLE_LTO= #963835
 	fi
 	filter-lto
-
-	# workaround ICE with <gcc-16.1.1_p20260606:16 (bug #973641)
-	# TODO: kept to let people update, cleanup after a few months
-	tc-is-gcc && [[ $(gcc-major-version) -eq 16 ]] &&
-		has_version -b '<sys-devel/gcc-16.1.1_p20260606:16' &&
-		append-flags -fno-tree-vectorize
 }
 
 multilib_src_configure() {

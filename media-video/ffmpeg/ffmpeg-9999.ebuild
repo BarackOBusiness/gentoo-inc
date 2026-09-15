@@ -3,10 +3,10 @@
 
 EAPI=8
 
-inherit flag-o-matic multilib-minimal toolchain-funcs
+inherit flag-o-matic multilib-minimal toolchain-funcs udev
 
 FFMPEG_SOC_PATCH=
-FFMPEG_SUBSLOT=60.62.62 # avutil.avcodec.avformat SONAME
+FFMPEG_SUBSLOT=61.63.63 # avutil.avcodec.avformat SONAME
 
 if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
@@ -43,8 +43,8 @@ FFMPEG_IUSE_MAP=(
 	amf
 	amrenc:libvo-amrwbenc@v3
 	amr:libopencore-amrnb,libopencore-amrwb@v3
-	appkit
 	apv:^liboapv # no multilib
+	appkit
 	bluray:libbluray
 	bs2b:libbs2b
 	bzip2:bzlib
@@ -52,7 +52,10 @@ FFMPEG_IUSE_MAP=(
 	cdio:libcdio
 	chromaprint
 	codec2:libcodec2
-	cuda:cuda-llvm
+	cuda-clang:cuda-llvm
+	# TODO?: currently curl is not used by default even if enabled but, if that
+	# changes, should consider swapping defaults from gnutls to +curl
+	curl:libcurl
 	+dav1d:libdav1d
 	${FFMPEG_UNSLOTTED:+doc:^htmlpages}
 	+drm:libdrm
@@ -126,10 +129,8 @@ FFMPEG_IUSE_MAP=(
 	vmaf:libvmaf
 	vorbis:libvorbis
 	vpx:libvpx
-	# libshaderc: merged here given shaderc is needed at build-time
-	# either way and many vulkan features depend on spirv_library
 	# vulkan-static: it still uses shared, only means no dlopen()
-	vulkan:libshaderc,vulkan,vulkan-static
+	vulkan:vulkan,vulkan-static
 	webp:libwebp
 	x264:libx264
 	x265:libx265
@@ -164,7 +165,7 @@ IUSE="
 	${FFMPEG_SOC_PATCH:+soc}
 "
 REQUIRED_USE="
-	cuda? ( nvenc )
+	cuda-clang? ( nvenc )
 	fribidi? ( truetype )
 	gmp? ( !librtmp )
 	libplacebo? ( vulkan )
@@ -196,6 +197,7 @@ COMMON_DEPEND="
 	cdio? ( dev-libs/libcdio-paranoia:=[${MULTILIB_USEDEP}] )
 	chromaprint? ( media-libs/chromaprint:=[${MULTILIB_USEDEP}] )
 	codec2? ( media-libs/codec2:=[${MULTILIB_USEDEP}] )
+	curl? (  net-misc/curl[${MULTILIB_USEDEP}] )
 	dav1d? ( media-libs/dav1d:=[${MULTILIB_USEDEP}] )
 	dvd? (
 		media-libs/libdvdnav[${MULTILIB_USEDEP}]
@@ -293,10 +295,7 @@ COMMON_DEPEND="
 	vmaf? ( media-libs/libvmaf:=[${MULTILIB_USEDEP}] )
 	vorbis? ( media-libs/libvorbis[${MULTILIB_USEDEP}] )
 	vpx? ( media-libs/libvpx:=[${MULTILIB_USEDEP}] )
-	vulkan? (
-		media-libs/shaderc[${MULTILIB_USEDEP}]
-		media-libs/vulkan-loader[${MULTILIB_USEDEP}]
-	)
+	vulkan? ( media-libs/vulkan-loader[${MULTILIB_USEDEP}] )
 	webp? ( media-libs/libwebp:=[${MULTILIB_USEDEP}] )
 	x264? ( media-libs/x264:=[${MULTILIB_USEDEP}] )
 	x265? ( media-libs/x265:=[${MULTILIB_USEDEP}] )
@@ -317,18 +316,21 @@ RDEPEND="
 DEPEND="
 	${COMMON_DEPEND}
 	X? ( x11-base/xorg-proto )
-	amf? ( >=media-libs/amf-headers-1.5.0 )
+	amf? ( >=media-libs/amf-headers-1.5.2 )
 	kernel_linux? ( >=sys-kernel/linux-headers-6 )
 	ladspa? ( media-libs/ladspa-sdk )
 	nvenc? ( >=media-libs/nv-codec-headers-12.1.14.0 )
 	opencl? ( dev-util/opencl-headers )
-	vulkan? ( >=dev-util/vulkan-headers-1.4.317 )
+	vulkan? (
+		dev-util/spirv-headers
+		>=dev-util/vulkan-headers-1.4.317
+	)
 "
 BDEPEND="
 	app-alternatives/awk
 	virtual/pkgconfig
 	amd64? ( dev-lang/nasm )
-	cuda? ( llvm-core/clang:*[llvm_targets_NVPTX] )
+	cuda-clang? ( llvm-core/clang:*[llvm_targets_NVPTX] )
 	vulkan? ( media-libs/shaderc )
 	${FFMPEG_UNSLOTTED:+"
 		dev-lang/perl
@@ -459,6 +461,8 @@ multilib_src_configure() {
 		--disable-liblcevc-dec
 		--disable-libmpeghdec
 		--disable-libmysofa
+		--disable-liboapv
+		--disable-libonnxruntime
 		--disable-libopenvino
 		--disable-libshine
 		--disable-libsvtjpegxs
@@ -479,18 +483,13 @@ multilib_src_configure() {
 
 		# disabled for other or additional reasons
 		--disable-cuda-nvcc # prefer cuda-llvm for less issues
-		--disable-libcelt # obsolete (bug #664158)
-		--disable-libglslang # prefer shaderc (bug #918989,#920283,#922333)
 		--disable-liblensfun # https://trac.ffmpeg.org/ticket/9112 (abandoned?)
 		--disable-libmfx # prefer libvpl for USE=qsv
-		--disable-libnpp # deprecated and not supported for cuda 13.0+
 		--disable-libopencv # leaving for later due to circular opencv[ffmpeg]
 		--disable-libtensorflow # causes headaches, and is gone
 		--disable-libtorch # support may need special attention (bug #936127)
 		--disable-mbedtls # messy with slots, tests underlinking issues
 		--disable-mmal # prefer USE=soc
-		--disable-omx # unsupported (bug #653386)
-		--disable-omx-rpi # ^
 
 		# to avoid obscure issues like bug #915384 and simplify the ebuild,
 		# not passing the following (use EXTRA_ECONF if really must):
@@ -501,7 +500,6 @@ multilib_src_configure() {
 
 	in_iuse soc && use soc &&
 		conf+=(
-			--disable-epoxy
 			--enable-libudev
 			--enable-sand
 			--enable-v4l2-request
@@ -535,6 +533,17 @@ multilib_src_configure() {
 
 	# skipping tests is handled at configure-time
 	local skip_tests=()
+
+	# tests known failing on BE arches, skip for now given potential
+	# fixes are complex and would rather wait for fixed release
+	# (shouldn't impact most BE users, scarcely used features)
+	# https://code.ffmpeg.org/FFmpeg/FFmpeg/issues/22564
+	# https://code.ffmpeg.org/FFmpeg/FFmpeg/pulls/22274
+	[[ $(tc-endian) == big ]] &&
+		skip_tests+=(
+			filter-drawvg-video
+			vsynth{1,2,3}-ffvhuff420p12
+		)
 
 	# zlib-ng is not bitexact w/ zlib producing mismatching md5sum (bug #965737)
 	has_version 'sys-libs/zlib-ng[compat]' &&
@@ -591,7 +600,10 @@ multilib_src_configure() {
 
 multilib_src_compile() {
 	mkdir -p fftools/resources/ || die #965687
+	mkdir -p libav{codec,filter}/vulkan/ || die #974907
+
 	emake V=1
+
 	in_iuse chromium && use chromium && multilib_is_native_abi &&
 		emake V=1 libffmpeg
 }
@@ -605,4 +617,17 @@ multilib_src_install() {
 	emake V=1 DESTDIR="${D}" install
 	in_iuse chromium && use chromium && multilib_is_native_abi &&
 		emake V=1 DESTDIR="${D}" install-libffmpeg
+}
+
+multilib_src_install_all() {
+	in_iuse soc && use soc && udev_dorules "${FILESDIR}"/60-dma-heap-ffmpeg.rules
+	einstalldocs
+}
+
+pkg_postinst() {
+	in_iuse soc && use soc && udev_reload
+}
+
+pkg_postrm() {
+	in_iuse soc && use soc && udev_reload
 }
