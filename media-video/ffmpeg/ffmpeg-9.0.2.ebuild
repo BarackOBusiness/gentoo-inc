@@ -3,7 +3,7 @@
 
 EAPI=8
 
-inherit flag-o-matic multilib-minimal toolchain-funcs udev
+inherit flag-o-matic multilib-minimal toolchain-funcs
 
 FFMPEG_SOC_PATCH=
 FFMPEG_SUBSLOT=61.63.63 # avutil.avcodec.avformat SONAME
@@ -24,8 +24,7 @@ else
 		"}
 	"
 	S=${WORKDIR}/ffmpeg-${PV} # avoid ${P} for ffmpeg-compat
-	# unkeyworded for testing
-	#KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86 ~arm64-macos ~x64-macos"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86 ~arm64-macos ~x64-macos"
 fi
 
 DESCRIPTION="Complete solution to record/convert/stream audio and video"
@@ -112,6 +111,7 @@ FFMPEG_IUSE_MAP=(
 	sdl:sdl2
 	snappy:libsnappy
 	sndio
+	sofa:^libmysofa # no multilib
 	speex:libspeex
 	srt:libsrt
 	ssh:libssh
@@ -187,7 +187,7 @@ COMMON_DEPEND="
 	alsa? ( media-libs/alsa-lib[${MULTILIB_USEDEP}] )
 	amr? ( media-libs/opencore-amr[${MULTILIB_USEDEP}] )
 	amrenc? ( media-libs/vo-amrwbenc[${MULTILIB_USEDEP}] )
-	apv? ( media-libs/openapv )
+	apv? ( <=media-libs/openapv-1.0.0.0 )
 	bluray? ( media-libs/libbluray:=[${MULTILIB_USEDEP}] )
 	bs2b? ( media-libs/libbs2b[${MULTILIB_USEDEP}] )
 	bzip2? ( app-arch/bzip2[${MULTILIB_USEDEP}] )
@@ -267,6 +267,7 @@ COMMON_DEPEND="
 	)
 	snappy? ( app-arch/snappy:=[${MULTILIB_USEDEP}] )
 	sndio? ( media-sound/sndio:=[${MULTILIB_USEDEP}] )
+	sofa? ( media-libs/libmysofa )
 	speex? ( media-libs/speex[${MULTILIB_USEDEP}] )
 	srt? ( net-libs/srt:=[${MULTILIB_USEDEP}] )
 	ssh? ( net-libs/libssh:=[sftp,${MULTILIB_USEDEP}] )
@@ -303,7 +304,10 @@ COMMON_DEPEND="
 	zlib? ( virtual/zlib:=[${MULTILIB_USEDEP}] )
 	zvbi? ( media-libs/zvbi[${MULTILIB_USEDEP}] )
 	${FFMPEG_SOC_PATCH:+"
-		soc? ( virtual/libudev:=[${MULTILIB_USEDEP}] )
+		soc? (
+			media-video/ffmpeg-soc-udev-rules
+			virtual/libudev:=[${MULTILIB_USEDEP}]
+		)
 	"}
 "
 RDEPEND="
@@ -345,7 +349,8 @@ MULTILIB_WRAPPED_HEADERS=(
 )
 
 PATCHES=(
-	"${FILESDIR}"/ffmpeg-6.1-opencl-parallel-gmake-fix.patch
+	"${FILESDIR}"/ffmpeg-9.0.2-opencl-parallel-gmake-fix.patch
+	"${FILESDIR}"/ffmpeg-9.0.2-prores-mismatch.patch
 )
 
 pkg_pretend() {
@@ -457,7 +462,6 @@ multilib_src_configure() {
 		--disable-libklvanc
 		--disable-liblcevc-dec
 		--disable-libmpeghdec
-		--disable-libmysofa
 		--disable-libonnxruntime
 		--disable-libopenvino
 		--disable-libshine
@@ -541,11 +545,13 @@ multilib_src_configure() {
 			vsynth{1,2,3}-ffvhuff420p12
 		)
 
-	# zlib-ng is not bitexact w/ zlib producing mismatching md5sum (bug #965737)
+	# zlib-ng is not bitexact w/ zlib producing mismatching md5sum
+	# (bug #965737,#983573,#983934)
 	has_version 'sys-libs/zlib-ng[compat]' &&
 		skip_tests+=(
-			lavf-{apng{,.png},gray16be.png,png,rgb48be.png}
+			lavf-{apng{,.png},gray16be.png,pdv{,-intra},png,rgb48be.png}
 			mov-mp4-frag-flush
+			seek-lavf-pdv
 			vsynth{1,2,3}-{flashsv,mpng,zlib}
 		)
 
@@ -613,17 +619,4 @@ multilib_src_install() {
 	emake V=1 DESTDIR="${D}" install
 	in_iuse chromium && use chromium && multilib_is_native_abi &&
 		emake V=1 DESTDIR="${D}" install-libffmpeg
-}
-
-multilib_src_install_all() {
-	in_iuse soc && use soc && udev_dorules "${FILESDIR}"/60-dma-heap-ffmpeg.rules
-	einstalldocs
-}
-
-pkg_postinst() {
-	in_iuse soc && use soc && udev_reload
-}
-
-pkg_postrm() {
-	in_iuse soc && use soc && udev_reload
 }
